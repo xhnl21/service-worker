@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Service Worker</title>
+	<style>
+		html,
+		body {
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			width: 600px;
+			max-width: 90%;
+			margin: 0 auto;
+			font-family: Helvetica, Arial, sans-serif;
+		}
+		.connection-status {
+			margin: 0;
+			text-align: right;
+			padding: 10px 0 0 0;
+			color: green;
+		}
+		.not-supported {
+			background: red;
+			color: #fff;
+		}
+
+
+		#snackbar {
+			visibility: hidden;
+			min-width: 250px;
+			margin-left: -125px;
+			background-color: #333;
+			color: #fff;
+			text-align: center;
+			border-radius: 2px;
+			padding: 16px;
+			position: fixed;
+			z-index: 1;
+			left: 50%;
+			bottom: 30px;
+			font-size: 17px;
+		}
+
+		#snackbar.show {
+			visibility: visible;
+			-webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+			animation: fadein 0.5s, fadeout 0.5s 2.5s;
+		}
+
+		@-webkit-keyframes fadein {
+			from {bottom: 0; opacity: 0;} 
+			to {bottom: 30px; opacity: 1;}
+		}
+
+		@keyframes fadein {
+			from {bottom: 0; opacity: 0;}
+			to {bottom: 30px; opacity: 1;}
+		}
+
+		@-webkit-keyframes fadeout {
+			from {bottom: 30px; opacity: 1;} 
+			to {bottom: 0; opacity: 0;}
+		}
+
+		@keyframes fadeout {
+			from {bottom: 30px; opacity: 1;}
+			to {bottom: 0; opacity: 0;}
+		}		
+	</style>
+</head>
+<body>
+	<div id="not-supported" class="not-supported"></div>
+
+	<p class="connection-status"></p>
+	<div id="snackbar"></div>
+
+	<script>
+		// crea el service worker
+		if ('serviceWorker' in navigator) {
+			window.addEventListener('load', function() {
+				navigator.serviceWorker
+				.register('./serviceWorker.js')
+				.then(function(registration) {
+					console.log('Registration was successful:'+ registration);				
+				}).catch(function(err) {
+					console.log('registration failed:'+ err);
+				});
+			});	
+		} else {
+			document.getElementById('not-supported').innerHTML = "Your browser doesn't support Service Worker";
+		}
+
+ 
+		// carga la primera ves 
+		window.addEventListener('load', function() {
+			let title =""
+			let body = ""
+			if (window.navigator.onLine) {
+				document.documentElement.classList.remove('is-offline');
+				document.querySelector('.connection-status').innerHTML = 'Online';
+				document.getElementById('snackbar').innerHTML = "Online";
+				showNotificationSimple()
+				title = "Demo"
+				body = "Online"
+				showNotification(title, body)
+			} else {
+				document.documentElement.classList.add('is-offline');
+				document.querySelector('.connection-status').innerHTML = 'Offline';
+				document.getElementById('snackbar').innerHTML = "Offline";
+				showNotificationSimple()
+				title = "Demo"
+				body = "Offline"										
+				showNotification(title, body)
+			}			
+
+			// despues de la carga sigue validando
+			function updateOnlineStatus(event) {				
+				if (window.navigator.onLine) {
+					document.documentElement.classList.remove('is-offline');
+					document.querySelector('.connection-status').innerHTML = 'Online';
+					document.getElementById('snackbar').innerHTML = "Online";
+					myFunction()
+					title = "Demo"
+					body = "Online"
+					showNotification(title, body)
+				} else {
+					document.documentElement.classList.add('is-offline');
+					document.querySelector('.connection-status').innerHTML = 'Offline';
+					document.getElementById('snackbar').innerHTML = "Offline";
+					myFunction()
+					title = "Demo"
+					body = "Offline"										
+					showNotification(title, body)
+				}
+			}
+
+			window.addEventListener('online',  updateOnlineStatus);
+			window.addEventListener('offline', updateOnlineStatus);
+		});		
+		function showNotificationSimple() {
+			var x = document.getElementById("snackbar");
+			x.className = "show";
+			setTimeout(function(){ 
+				x.className = x.className.replace("show", ""); 
+			}, 3000);
+		}	
+
+		function showNotification(title, body) {
+			Notification.requestPermission(function(result) {
+				if (result === 'granted') {
+					navigator.serviceWorker.ready.then(function(registration) {
+						registration.showNotification(title, {
+							body: body,
+							// icon: '../images/touch/chrome-touch-icon-192x192.png',
+							// vibrate: [200, 100, 200, 100, 200, 100, 200],
+							// tag: 'vibration-sample'
+						});
+					});
+				}
+			});
+		}
+
+	</script>
+</body>
+</html>
